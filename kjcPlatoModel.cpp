@@ -59,7 +59,7 @@ namespace kjc {
 		return this->mY;
 	}
 
-	bool Cell::GetVisited() const {
+	bool Cell::isVisited() const {
 		return this->mVisited;
 	}
 
@@ -121,6 +121,10 @@ namespace kjc {
 		this->mCurrentDirection = direction;
 	}
 
+	void PlatoModel::SetWumpusDead() {
+		this->mWumpusDead = true;
+	}
+
 	int PlatoModel::GetCurrentX() const {
 		return  this->mCurrentX;		
 	}
@@ -131,6 +135,10 @@ namespace kjc {
 
 	int PlatoModel::GetCurrentDirection() const {
 		return this->mCurrentDirection;
+	}
+
+	bool PlatoModel::WumpusDead() const {
+		return this->mWumpusDead;
 	}
 
 	// Methods
@@ -170,7 +178,7 @@ namespace kjc {
 		Cell currentCell = this->GetCell(this->mCurrentX, this->mCurrentY);
 
 		// If we haven't visited this cell already, update the current cell to be visited
-		if (!currentCell.GetVisited()) {
+		if (!currentCell.isVisited()) {
 			currentCell.SetVisited(true);
 
 			if (!this->AddCell(currentCell)) {

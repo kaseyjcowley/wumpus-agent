@@ -8,6 +8,7 @@ namespace kjc {
 		SetName("Plato");
 		this->mModel = new kjc::PlatoModel();
 		this->mHasGold = false;
+		this->mHuntinDaWumpus = false;
 	}
 
 	Plato::~Plato() {
@@ -22,7 +23,7 @@ namespace kjc {
 			return action;
 		}
 
-		if (this->mHasGold) {
+		if (this->mHasGold || this->mHuntinDaWumpus) {
 			return action;
 		}
 
@@ -44,13 +45,19 @@ namespace kjc {
 		// Find our current position
 		int x = this->mModel->GetCurrentX();
 		int y = this->mModel->GetCurrentY();
-		bool isStench = false;
-		bool isBreeze = false;
+		// bool isStench = false;
+		// bool isBreeze = false;
 		// Get the cell to determine if we have visited this cell before so we can skip parameter parsing
 		Cell currentCell = this->mModel->GetCell(x, y);
 
-		if (currentCell.GetVisited()) {
+		if (currentCell.isVisited()) {
 			return true;
+		}
+
+		if (percept->GetAtom("SCREAM").GetValue() != "") {
+			this->mModel->SetWumpusDead();
+			this->mHuntinDaWumpus = false;
+			action->SetCode(ai::Agent::WumpusAction::NOOP);
 		}
 
 		// Check for glitter
@@ -58,12 +65,13 @@ namespace kjc {
 			DEBUG("GRABBING GOLD");
 			action->SetCode(ai::Agent::WumpusAction::GRAB);
 			this->mHasGold = true;
+			return true;
 		}
 
 		// Check for breezes
 		if (percept->GetAtom("BREEZE").GetValue() != "") {
 			DEBUG("BREEZE IS FELT");
-			isBreeze = true;
+			// isBreeze = true;
 			this->mModel->mKb->TellBreezy(x, y, true);
 		} else {
 			DEBUG("BREEZE IS NOT FELT");
@@ -73,17 +81,50 @@ namespace kjc {
 		// Check for stenches
 		if (percept->GetAtom("STENCH").GetValue() != "") {
 			DEBUG("STENCH IS SMELT");
-			isStench = true;
+			// isStench = true;
 			this->mModel->mKb->TellStench(x, y, true);
+
+			if (!this->mModel->WumpusDead()) {
+			this->mHuntinDaWumpus = true;
+
+				// Determine what direction I'm in
+				if (this->mModel->mKb->WumpusAt(x,y+1)) {
+					if (this->mModel->GetCurrentDirection() != D_NORTH) {
+						action->SetCode(ai::Agent::WumpusAction::TURN_RIGHT);
+					} else {
+						action->SetCode(ai::Agent::WumpusAction::SHOOT);
+					}
+				} else if (this->mModel->mKb->WumpusAt(x+1,y)) {
+					if (this->mModel->GetCurrentDirection() != D_EAST) {
+						action->SetCode(ai::Agent::WumpusAction::TURN_RIGHT);
+					} else {
+						action->SetCode(ai::Agent::WumpusAction::SHOOT);
+					}
+				} else if (this->mModel->mKb->WumpusAt(x,y-1)) {
+					if (this->mModel->GetCurrentDirection() != D_SOUTH) {
+						action->SetCode(ai::Agent::WumpusAction::TURN_RIGHT);
+					} else {
+						action->SetCode(ai::Agent::WumpusAction::SHOOT);
+					}
+				} else if (this->mModel->mKb->WumpusAt(x-1,y)) {
+					if (this->mModel->GetCurrentDirection() != D_WEST) {
+						action->SetCode(ai::Agent::WumpusAction::TURN_RIGHT);
+					} else {
+						action->SetCode(ai::Agent::WumpusAction::SHOOT);
+					}
+				}
+			}
+
 		} else {
+			this->mHuntinDaWumpus = false;
 			DEBUG("STENCH IS NOT SMELT");
 			this->mModel->mKb->TellStench(x, y, false);
 		}
 
-		// If we feel a breeze or smell a stench in (1,1), then quit
-		if ((isStench || isBreeze) && (x == 1 && y == 1)) {
-			return false;
-		}
+		// // If we feel a breeze or smell a stench in (1,1), then quit
+		// if ((isStench || isBreeze) && (x == 1 && y == 1)) {
+		// 	return false;
+		// }
 
 		return true;
 	}
@@ -138,7 +179,7 @@ namespace kjc {
 			// std::cout << "initialState: " << *initialState << std::endl;
 
 			kjc::PlatoProblem *problem = new PlatoProblem(initialState, this->mModel);
-			ai::Search::Fringe *frontier = new ai::Search::UCFringe();
+			ai::Search::Fringe *frontier = new ai::Search::AStarFringe();
 
 			ai::Search::Algorithm *algorithm = new ai::Search::Graph(problem, frontier);
 

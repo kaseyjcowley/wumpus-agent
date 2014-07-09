@@ -52,7 +52,8 @@ namespace kjc {
 
 	// Methods
 	bool PlatoState::IsEqual(const ai::Search::State * const state_in) const {
-		return true;
+		const kjc::PlatoState * const state = dynamic_cast<const kjc::PlatoState * const>(state_in);
+		return (*this == *state);
 	}
 
 	// Display Methods

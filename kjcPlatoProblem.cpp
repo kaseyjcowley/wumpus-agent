@@ -19,6 +19,14 @@ namespace kjc {
 	bool PlatoProblem::GoalTest(const ai::Search::State * const state_in) const {
 		// Cast the state to a state we can recognize
 		const kjc::PlatoState * const state = dynamic_cast<const kjc::PlatoState * const>(state_in);
+
+		Cell state_cell = this->mModel->GetCell(state->GetX(), state->GetY());
+
+		if (!state_cell.isVisited() && this->mModel->mKb->isSafe(state->GetX(), state->GetY())) {
+			return true;
+		}
+
+		return false;
 	}
 
 	bool PlatoProblem::FindSuccessors(const ai::Search::State * const state_in,
