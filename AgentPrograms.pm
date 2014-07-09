@@ -20,7 +20,7 @@ our $aps =
  {
 	 name => 'Plato',
 	 key => 'P',
-	 header => 'Plato.h',
+	 header => 'kjcPlato.h',
 	 cpp => ['kjcPlato.cpp','kjcPlatoModel.cpp', 'WumpusKnowledgeBase.cpp', 'kjcPlatoAction.cpp', 'kjcPlatoState.cpp', 'kjcPlatoProblem.cpp'],
 	 constructor => 'kjc::Plato()',
  }

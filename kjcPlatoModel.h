@@ -42,7 +42,7 @@ namespace kjc {
 
 		int GetX() const;
 		int GetY() const;
-		bool GetVisited() const;
+		bool isVisited() const;
 
 		// Display functions
 		void Display(std::ostream &out) const;
@@ -66,11 +66,13 @@ namespace kjc {
 		void SetCurrentY(const int &y);
 		void SetCurrentDirection(const int &direction);
 		void IncrementSearches();
+		void SetWumpusDead();
 
 		int GetCurrentX() const;
 		int GetCurrentY() const;
 		int GetCurrentDirection() const;
 		int GetSearches() const;
+		bool WumpusDead() const;
 
 		// Methods
 		bool AddCell(const Cell &cell);

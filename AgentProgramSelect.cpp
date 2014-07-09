@@ -3,7 +3,7 @@
 
 #include "Simpleton.h"
 #include "Aristotle.h"
-#include "Plato.h"
+#include "kjcPlato.h"
 
 namespace ai
 {
