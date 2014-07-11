@@ -25,7 +25,6 @@ namespace kjc {
 	private:
 		kjc::PlatoModel *mModel;
 		bool mHasGold;
-		bool mHuntinDaWumpus;
 		std::list<kjc::PlatoAction> mActionQueue;
 	};
 }
