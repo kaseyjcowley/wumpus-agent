@@ -8,7 +8,6 @@ namespace kjc {
 		SetName("Plato");
 		this->mModel = new kjc::PlatoModel();
 		this->mHasGold = false;
-		this->mHuntinDaWumpus = false;
 	}
 
 	Plato::~Plato() {
@@ -23,7 +22,7 @@ namespace kjc {
 			return action;
 		}
 
-		if (this->mHasGold || this->mHuntinDaWumpus) {
+		if (this->mHasGold) {
 			return action;
 		}
 
@@ -37,11 +36,6 @@ namespace kjc {
 	}
 
 	bool Plato::ParsePercepts(const ai::Agent::Percept *percept, ai::Agent::Action *action) {
-		// If we have the gold, quit
-		if (this->mHasGold) {
-			return false;
-		}
-
 		// Find our current position
 		int x = this->mModel->GetCurrentX();
 		int y = this->mModel->GetCurrentY();
@@ -50,13 +44,17 @@ namespace kjc {
 		// Get the cell to determine if we have visited this cell before so we can skip parameter parsing
 		Cell currentCell = this->mModel->GetCell(x, y);
 
+		// If we have the gold, quit
+		if (this->mHasGold) {
+			return false;
+		}
+
 		if (currentCell.isVisited()) {
 			return true;
 		}
 
 		if (percept->GetAtom("SCREAM").GetValue() != "") {
 			this->mModel->SetWumpusDead();
-			this->mHuntinDaWumpus = false;
 			action->SetCode(ai::Agent::WumpusAction::NOOP);
 		}
 
@@ -83,40 +81,7 @@ namespace kjc {
 			DEBUG("STENCH IS SMELT");
 			// isStench = true;
 			this->mModel->mKb->TellStench(x, y, true);
-
-			if (!this->mModel->WumpusDead()) {
-			this->mHuntinDaWumpus = true;
-
-				// Determine what direction I'm in
-				if (this->mModel->mKb->WumpusAt(x,y+1)) {
-					if (this->mModel->GetCurrentDirection() != D_NORTH) {
-						action->SetCode(ai::Agent::WumpusAction::TURN_RIGHT);
-					} else {
-						action->SetCode(ai::Agent::WumpusAction::SHOOT);
-					}
-				} else if (this->mModel->mKb->WumpusAt(x+1,y)) {
-					if (this->mModel->GetCurrentDirection() != D_EAST) {
-						action->SetCode(ai::Agent::WumpusAction::TURN_RIGHT);
-					} else {
-						action->SetCode(ai::Agent::WumpusAction::SHOOT);
-					}
-				} else if (this->mModel->mKb->WumpusAt(x,y-1)) {
-					if (this->mModel->GetCurrentDirection() != D_SOUTH) {
-						action->SetCode(ai::Agent::WumpusAction::TURN_RIGHT);
-					} else {
-						action->SetCode(ai::Agent::WumpusAction::SHOOT);
-					}
-				} else if (this->mModel->mKb->WumpusAt(x-1,y)) {
-					if (this->mModel->GetCurrentDirection() != D_WEST) {
-						action->SetCode(ai::Agent::WumpusAction::TURN_RIGHT);
-					} else {
-						action->SetCode(ai::Agent::WumpusAction::SHOOT);
-					}
-				}
-			}
-
 		} else {
-			this->mHuntinDaWumpus = false;
 			DEBUG("STENCH IS NOT SMELT");
 			this->mModel->mKb->TellStench(x, y, false);
 		}
