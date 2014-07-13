@@ -16,14 +16,22 @@ namespace kjc {
 
 	ai::Agent::Action * Plato::Program(const ai::Agent::Percept *percept) {
 		ai::Agent::Action *action = new ai::Agent::WumpusAction;
-		// Start parsing percepts by adding information to the knowledge base
-		if (!this->ParsePercepts(percept, action)) {
+		// If we've got the gold, then just quit
+		if (this->mHasGold) {
 			action->SetCode(ai::Agent::WumpusAction::QUIT);
 			return action;
 		}
 
-		if (this->mHasGold) {
-			return action;
+		// Start parsing percepts by adding information to the knowledge base
+		this->ParsePercepts(percept, action);
+
+		switch (action->GetCode()) {
+			case ai::Agent::WumpusAction::GRAB:
+				this->mHasGold = true;
+				return action;
+			case ai::Agent::WumpusAction::SHOOT:
+			case ai::Agent::WumpusAction::QUIT:
+				return action;
 		}
 
 		// Get the cell that corresponds to our current position and update its visited state
@@ -35,71 +43,50 @@ namespace kjc {
 		return action;
 	}
 
-	bool Plato::ParsePercepts(const ai::Agent::Percept *percept, ai::Agent::Action *action) {
+	void Plato::ParsePercepts(const ai::Agent::Percept *percept, ai::Agent::Action *action) {
 		// Find our current position
 		int x = this->mModel->GetCurrentX();
 		int y = this->mModel->GetCurrentY();
-		// bool isStench = false;
-		// bool isBreeze = false;
-		// Get the cell to determine if we have visited this cell before so we can skip parameter parsing
-		Cell currentCell = this->mModel->GetCell(x, y);
 
-		// If we have the gold, quit
-		if (this->mHasGold) {
-			return false;
-		}
-
-		if (currentCell.isVisited()) {
-			return true;
-		}
-
+		// Check for screams
 		if (percept->GetAtom("SCREAM").GetValue() != "") {
 			this->mModel->SetWumpusDead();
-			action->SetCode(ai::Agent::WumpusAction::NOOP);
+			this->mModel->mKb->TellWumpusDead();
 		}
 
 		// Check for glitter
 		if (percept->GetAtom("GLITTER").GetValue() != "") {
-			DEBUG("GRABBING GOLD");
 			action->SetCode(ai::Agent::WumpusAction::GRAB);
-			this->mHasGold = true;
-			return true;
 		}
 
 		// Check for breezes
 		if (percept->GetAtom("BREEZE").GetValue() != "") {
-			DEBUG("BREEZE IS FELT");
-			// isBreeze = true;
 			this->mModel->mKb->TellBreezy(x, y, true);
 		} else {
-			DEBUG("BREEZE IS NOT FELT");
 			this->mModel->mKb->TellBreezy(x, y, false);
 		}
 
 		// Check for stenches
 		if (percept->GetAtom("STENCH").GetValue() != "") {
-			DEBUG("STENCH IS SMELT");
-			// isStench = true;
 			this->mModel->mKb->TellStench(x, y, true);
 		} else {
-			DEBUG("STENCH IS NOT SMELT");
 			this->mModel->mKb->TellStench(x, y, false);
 		}
-
-		// // If we feel a breeze or smell a stench in (1,1), then quit
-		// if ((isStench || isBreeze) && (x == 1 && y == 1)) {
-		// 	return false;
-		// }
-
-		return true;
 	}
 
 	void Plato::SearchAndGetAction(ai::Agent::Action *action) {
 		// Check if our action queue is empty and search for a goal if it is
 		if (this->mActionQueue.empty()) {
 			if (!this->SearchForGoal()) {
-				action->SetCode(ai::Agent::WumpusAction::QUIT);
-				return;
+				if (this->mModel->FindWumpus() && this->mModel->mWumpusLocation == NULL) {
+					std::cout << "Found the wumpus at: " << this->mModel->GetWumpusX() << ", " << this->mModel->GetWumpusY() << std::endl;
+					this->mModel->mWumpusLocation = new PlatoState();
+					this->mModel->mWumpusLocation->SetX(this->mModel->GetWumpusX());
+					this->mModel->mWumpusLocation->SetY(this->mModel->GetWumpusY());
+				} else {
+					action->SetCode(ai::Agent::WumpusAction::QUIT);
+					return;
+				}
 			}
 		}
 
@@ -107,27 +94,34 @@ namespace kjc {
 			// Get the next action
 			kjc::PlatoAction a = this->mActionQueue.front();
 			// Pop the action from the queue
-			this->mActionQueue.pop_front();
-
 			// Determine what to do based on the action that was provided
 			switch (a.GetType()) {
 				case A_FORWARD:
-					// Move forward
-					this->mModel->UpdateCurrentPosition();
-					action->SetCode(ai::Agent::WumpusAction::FORWARD);
+					// Check to see if we need to shoosten the Wumpus
+					if (!this->mModel->WumpusDead() && this->mModel->mWumpusLocation != NULL && this->mModel->NextCellIsWumpus()) {
+						action->SetCode(ai::Agent::WumpusAction::SHOOT);
+					} else {
+						// Move forward
+						this->mModel->UpdateCurrentPosition();
+						action->SetCode(ai::Agent::WumpusAction::FORWARD);
+						this->mActionQueue.pop_front();
+					}
 				break;
 				case A_LEFT:
 					// Turn left
 					this->mModel->UpdateCurrentDirection(T_LEFT);
 					action->SetCode(ai::Agent::WumpusAction::TURN_LEFT);
+					this->mActionQueue.pop_front();
 				break;
 				case A_RIGHT:
 					// Turn right
 					this->mModel->UpdateCurrentDirection(T_RIGHT);
 					action->SetCode(ai::Agent::WumpusAction::TURN_RIGHT);
+					this->mActionQueue.pop_front();
 				break;
 				default:
-					action->SetCode(ai::Agent::WumpusAction::QUIT);
+					action->SetCode(ai::Agent::WumpusAction::NOOP);
+					this->mActionQueue.pop_front();
 			}
 		}
 	}
@@ -158,16 +152,16 @@ namespace kjc {
 	            for(it = solution->begin(); it != solution->end(); it++) {
 	                if((*it)->GetAction()) {
 	                    const kjc::PlatoAction * const action = dynamic_cast<const kjc::PlatoAction * const>((*it)->GetAction());
-	                    std::cout << *action << " ";
+	                    // std::cout << *action << " ";
 	                    this->mActionQueue.push_back(*action);
 	                }
 	                if((*it)->GetState()) {
-	                    const kjc::PlatoState * const state = dynamic_cast<const kjc::PlatoState * const>((*it)->GetState());
-	                    std::cout << *state << " ";
+	                    // const kjc::PlatoState * const state = dynamic_cast<const kjc::PlatoState * const>((*it)->GetState());
+	                    // std::cout << *state << " ";
 	                }
 	                cost = (*it)->GetPathCost();
 	                depth = (*it)->GetDepth();
-	                std::cout << std::endl;
+	                // std::cout << std::endl;
 	              }
 	            
 	            size_t nodes_generated = algorithm->GetNumberNodesGenerated();

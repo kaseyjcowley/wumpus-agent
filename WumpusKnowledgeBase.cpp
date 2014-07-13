@@ -5,9 +5,15 @@
 #include "WumpusKnowledgeBase.h"
 
 namespace kjc {
+
 	WumpusKnowledgeBase::WumpusKnowledgeBase()
   	: ai::PL::KnowledgeBase()
 	{
+		myfile.open("PropLogic.txt");
+
+		if (!myfile.is_open()) {
+			std::cout << "FAIL" << std::endl;
+		}
 		// Create the logic physics of the world
 		// Breeze physics & Stench physics
 		for (int x = 1; x <= WIDTH; x++) {
@@ -25,9 +31,12 @@ namespace kjc {
 
 		// At least 1 Wumpus
 		AddLogicPhysicsSentence("W", "|", true);
+		AddSentence("!WD");
+		myfile << "!WD\n";
 	}
 	
 	WumpusKnowledgeBase::~WumpusKnowledgeBase() {
+		myfile.close();
 	}	
 
 	void WumpusKnowledgeBase::AddLogicPhysicsSentence(const int &x, const int &y, const std::string &lhs, const std::string &rhs, const std::string &op, const bool allSquares) {
@@ -70,6 +79,8 @@ namespace kjc {
 		sentence.replace(pos, std::string::npos, ")");
 
 		// std::cout << sentence << std::endl;
+		
+		myfile << sentence << "\n";
 
 		AddSentence(sentence);
 
@@ -96,6 +107,8 @@ namespace kjc {
 
 		// std::cout << sentence << std::endl;
 
+		myfile << sentence << "\n";
+
 		AddSentence(sentence);
 
 		ss.str("");
@@ -115,6 +128,8 @@ namespace kjc {
 
 		std::string sentence = ss.str();
 
+		myfile << sentence << "\n";
+
 		AddSentence(sentence);
 
 		ss.str("");
@@ -131,6 +146,8 @@ namespace kjc {
 
 		std::string sentence = ss.str();
 
+		myfile << sentence << "\n";
+
 		AddSentence(sentence);
 
 		ss.str("");
@@ -141,11 +158,14 @@ namespace kjc {
 		ai::PL::KnowledgeBase question;
 		bool safe;
 
-		ss << "((!P_" << x << "_" << y << ") & (!W_" << x << "_" << y << "))";
+		ss << "((WD | !W_" << x << "_" << y << ") & !P_" << x << "_" << y << ")";
+		// ss << "((!P_" << x << "_" << y << ") & ((WD) | (!W_" << x << "_" << y << ")))";
 
 		// std::cout << ss.str() << std::endl;
 
 		question.AddSentence(ss.str());
+
+		myfile << ss.str() << "\n";
 
 		safe = (this->DPLL_Entails(question) == ai::PL::Symbol::KNOWN_TRUE);
 
@@ -161,8 +181,15 @@ namespace kjc {
 
 		question.AddSentence(ss.str());
 
+		myfile << ss.str() << "\n";
+
 		isWumpus = (this->DPLL_Entails(question) == ai::PL::Symbol::KNOWN_TRUE);
 
 		return isWumpus;
+	}
+
+	void WumpusKnowledgeBase::TellWumpusDead() {
+		AddSentence("WD");
+		myfile << "WD" << "\n";
 	}
 }

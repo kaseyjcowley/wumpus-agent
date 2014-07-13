@@ -1,3 +1,4 @@
+#include <cmath>
 #include "kjcPlatoModel.h"
 #include "Debug.h"
 
@@ -90,6 +91,8 @@ namespace kjc {
 
 		// Set the Wumpus dead flag to false
 		this->mWumpusDead = false;
+		this->mWumpusX = this->mWumpusY = 0;
+		this->mWumpusLocation = NULL;
 
 		// Populate the environment with cells
 		for (int x = 1; x <= sWIDTH; x++) {
@@ -106,6 +109,7 @@ namespace kjc {
 
 	PlatoModel::~PlatoModel() {
 		delete mKb;
+		delete mWumpusLocation;
 	}
 
 	// Getters and Setters
@@ -122,7 +126,10 @@ namespace kjc {
 	}
 
 	void PlatoModel::SetWumpusDead() {
+		delete this->mWumpusLocation;
+		this->mWumpusLocation = NULL;
 		this->mWumpusDead = true;
+		std::cout << "MODEL IS SETTING WUMPUS AS DEAD: " << (int)this->mWumpusDead << std::endl;
 	}
 
 	int PlatoModel::GetCurrentX() const {
@@ -139,6 +146,14 @@ namespace kjc {
 
 	bool PlatoModel::WumpusDead() const {
 		return this->mWumpusDead;
+	}
+
+	int PlatoModel::GetWumpusX() const {
+		return this->mWumpusX;
+	}
+
+	int PlatoModel::GetWumpusY() const {
+		return this->mWumpusY;
 	}
 
 	// Methods
@@ -227,6 +242,24 @@ namespace kjc {
 				this->mCurrentX--;
 			break;
 		}
+	}
+
+	bool PlatoModel::FindWumpus() {
+		for (int x = 1; x <= sWIDTH; x++) {
+			for (int y = 1; y <= sHEIGHT; y++) {
+				if (this->mKb->WumpusAt(x,y)) {
+					this->mWumpusX = x;
+					this->mWumpusY = y;
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	bool PlatoModel::NextCellIsWumpus() const {
+		return ((std::abs(this->mWumpusX - this->mCurrentX) == 1 && this->mCurrentY == this->mWumpusY) || (std::abs(this->mWumpusY - this->mCurrentY) && this->mCurrentX == this->mWumpusX));
 	}
 
 	// Display functions

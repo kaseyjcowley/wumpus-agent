@@ -20,6 +20,10 @@ namespace kjc {
 		// Cast the state to a state we can recognize
 		const kjc::PlatoState * const state = dynamic_cast<const kjc::PlatoState * const>(state_in);
 
+		if (this->mModel->mWumpusLocation != NULL) {
+			return (*state == *(this->mModel->mWumpusLocation));
+		}
+
 		Cell state_cell = this->mModel->GetCell(state->GetX(), state->GetY());
 
 		if (!state_cell.isVisited() && this->mModel->mKb->isSafe(state->GetX(), state->GetY())) {
@@ -91,7 +95,10 @@ namespace kjc {
 		kjc::PlatoAction *actionRight = new PlatoAction(A_RIGHT);
 
 		// Check for the legality and safety of the forward state before adding an action state pair
-		if (isLegal && this->mModel->mKb->isSafe(forwardState->GetX(), forwardState->GetY())) {
+		if (isLegal && 
+			(this->mModel->mKb->isSafe(forwardState->GetX(), forwardState->GetY()) || 
+			(this->mModel->GetWumpusX() == forwardState->GetX() && this->mModel->GetWumpusY() == forwardState->GetY()))) 
+		{
 			// Set the direction of the forward state
 			forwardState->SetDirection(state->GetDirection());
 			// Forward action

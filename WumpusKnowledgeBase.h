@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ai_pl.h>
+#include <fstream>
 
 namespace kjc {
 	class WumpusKnowledgeBase : public ai::PL::KnowledgeBase {
@@ -15,10 +16,12 @@ namespace kjc {
 		void AddLogicPhysicsSentence(const std::string &identifier, const std::string &op, bool allSquares);
 		bool isSafe(const int &x, const int &y);
 		bool WumpusAt(const int &x, const int &y);
+		void TellWumpusDead();
 		
 	protected:
 		static const int WIDTH = 4;
 		static const int HEIGHT = 4;
+		std::ofstream myfile;
 	private:
 	};
 }

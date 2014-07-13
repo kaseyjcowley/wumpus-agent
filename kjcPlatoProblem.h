@@ -20,6 +20,5 @@ namespace kjc {
 
 	private:
 		kjc::PlatoModel *mModel;
-		int mSearches;
 	};
 }

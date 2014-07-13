@@ -18,7 +18,7 @@ namespace kjc {
 		virtual ai::Agent::Action * Program(const ai::Agent::Percept *percept);
 
 		// Methods
-		bool ParsePercepts(const ai::Agent::Percept *percept, ai::Agent::Action *action);
+		void ParsePercepts(const ai::Agent::Percept *percept, ai::Agent::Action *action);
 		void SearchAndGetAction(ai::Agent::Action *action);
 		bool SearchForGoal();
 

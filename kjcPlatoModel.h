@@ -3,6 +3,7 @@
 #include <map>
 #include <string>
 #include "WumpusKnowledgeBase.h"
+#include "kjcPlatoState.h"
 
 // Directional Enum
 enum {
@@ -73,6 +74,8 @@ namespace kjc {
 		int GetCurrentDirection() const;
 		int GetSearches() const;
 		bool WumpusDead() const;
+		int GetWumpusX() const;
+		int GetWumpusY() const;
 
 		// Methods
 		bool AddCell(const Cell &cell);
@@ -83,6 +86,8 @@ namespace kjc {
 		void SetCurrentCellToVisited();
 		void UpdateCurrentDirection(const int &turn);
 		void UpdateCurrentPosition();
+		bool FindWumpus();
+		bool NextCellIsWumpus() const;
 
 		// Display functions
 		void Display(std::ostream &out) const;
@@ -94,8 +99,10 @@ namespace kjc {
 		const static int sWIDTH = 4;
 		const static int sHEIGHT = 4;
 
+		PlatoState *mWumpusLocation;
+
 	private:
-		int mCurrentX, mCurrentY;
+		int mCurrentX, mCurrentY, mWumpusX, mWumpusY;
 		int mCurrentDirection;
 		std::map<const int, Cell> mEnvironment;
 		bool mWumpusDead;
