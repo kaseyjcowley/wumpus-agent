@@ -96,8 +96,8 @@ namespace kjc {
 
 		// Check for the legality and safety of the forward state before adding an action state pair
 		if (isLegal && 
-			(this->mModel->mKb->isSafe(forwardState->GetX(), forwardState->GetY()) || 
-			(this->mModel->GetWumpusX() == forwardState->GetX() && this->mModel->GetWumpusY() == forwardState->GetY()))) 
+			(this->mModel->mKb->isSafe(forwardState->GetX(), forwardState->GetY()) ||
+			(forwardState->GetX() == this->mModel->GetWumpusX() && forwardState->GetY() == this->mModel->GetWumpusY())))
 		{
 			// Set the direction of the forward state
 			forwardState->SetDirection(state->GetDirection());

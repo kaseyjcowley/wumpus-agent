@@ -2,27 +2,27 @@
 #include <string>
 #include <cstdio>
 #include <sstream>
+#include <vector>
 #include "WumpusKnowledgeBase.h"
+#include "Debug.h"
 
 namespace kjc {
 
 	WumpusKnowledgeBase::WumpusKnowledgeBase()
   	: ai::PL::KnowledgeBase()
 	{
-		myfile.open("PropLogic.txt");
+		AddSentence("!P_1_1");
+		AddSentence("!W_1_1");
 
-		if (!myfile.is_open()) {
-			std::cout << "FAIL" << std::endl;
-		}
 		// Create the logic physics of the world
 		// Breeze physics & Stench physics
 		for (int x = 1; x <= WIDTH; x++) {
 			for (int y = 1; y <= HEIGHT; y++) {
 				// Add Breeze Physics
-				AddLogicPhysicsSentence(x, y, "B", "P", "|", false);			
-	
+				AddLogicPhysicsSentence(x, y, "B", "P", "|", false);
+
 				// Add Stench Physics
-				AddLogicPhysicsSentence(x, y, "S", "W", "|", false);			
+				AddLogicPhysicsSentence(x, y, "S", "W", "|", false);
 
 				// At most 1 Wumpus
 				AddLogicPhysicsSentence(x, y, "W", "!W", "&", true);
@@ -31,18 +31,15 @@ namespace kjc {
 
 		// At least 1 Wumpus
 		AddLogicPhysicsSentence("W", "|", true);
-		AddSentence("!WD");
-		myfile << "!WD\n";
 	}
-	
+
 	WumpusKnowledgeBase::~WumpusKnowledgeBase() {
-		myfile.close();
-	}	
+	}
 
 	void WumpusKnowledgeBase::AddLogicPhysicsSentence(const int &x, const int &y, const std::string &lhs, const std::string &rhs, const std::string &op, const bool allSquares) {
 		std::ostringstream ss;
 		std::string separator = " " + op + " ";
-		
+
 		ss << lhs << "_" << x << "_" << y << " <=> (";
 
 		// If we should iterate over all squares
@@ -79,8 +76,6 @@ namespace kjc {
 		sentence.replace(pos, std::string::npos, ")");
 
 		// std::cout << sentence << std::endl;
-		
-		myfile << sentence << "\n";
 
 		AddSentence(sentence);
 
@@ -90,8 +85,6 @@ namespace kjc {
 	void WumpusKnowledgeBase::AddLogicPhysicsSentence(const std::string &identifier, const std::string &op, bool allSquares) {
 		std::ostringstream ss;
 		std::string separator = " " + op + " ";
-
-		ss << "(";
 
 		for (int x = 1; x <= WIDTH; x++) {
 			for (int y = 1; y <= HEIGHT; y++) {
@@ -103,11 +96,8 @@ namespace kjc {
 		std::string sentence = ss.str();
 		unsigned pos = sentence.rfind(separator);
 		sentence.erase(pos, std::string::npos);
-		sentence.append(")");
 
 		// std::cout << sentence << std::endl;
-
-		myfile << sentence << "\n";
 
 		AddSentence(sentence);
 
@@ -128,8 +118,6 @@ namespace kjc {
 
 		std::string sentence = ss.str();
 
-		myfile << sentence << "\n";
-
 		AddSentence(sentence);
 
 		ss.str("");
@@ -146,8 +134,6 @@ namespace kjc {
 
 		std::string sentence = ss.str();
 
-		myfile << sentence << "\n";
-
 		AddSentence(sentence);
 
 		ss.str("");
@@ -158,14 +144,11 @@ namespace kjc {
 		ai::PL::KnowledgeBase question;
 		bool safe;
 
-		ss << "((WD | !W_" << x << "_" << y << ") & !P_" << x << "_" << y << ")";
-		// ss << "((!P_" << x << "_" << y << ") & ((WD) | (!W_" << x << "_" << y << ")))";
+		ss << "((WD | (!W_" << x << "_" << y << ")) & (!P_" << x << "_" << y << "))";
 
 		// std::cout << ss.str() << std::endl;
 
 		question.AddSentence(ss.str());
-
-		myfile << ss.str() << "\n";
 
 		safe = (this->DPLL_Entails(question) == ai::PL::Symbol::KNOWN_TRUE);
 
@@ -181,8 +164,6 @@ namespace kjc {
 
 		question.AddSentence(ss.str());
 
-		myfile << ss.str() << "\n";
-
 		isWumpus = (this->DPLL_Entails(question) == ai::PL::Symbol::KNOWN_TRUE);
 
 		return isWumpus;
@@ -190,6 +171,15 @@ namespace kjc {
 
 	void WumpusKnowledgeBase::TellWumpusDead() {
 		AddSentence("WD");
-		myfile << "WD" << "\n";
+	}
+
+	std::ostream &operator<<(std::ostream &os, const WumpusKnowledgeBase &rhs) {
+		std::vector<ai::PL::Sentence *> sentences = rhs.GetSentences();
+
+		for (unsigned int i = 0; i < sentences.size(); i++) {
+			os << sentences[i]->ToString() << std::endl;
+		}
+
+		return os;
 	}
 }

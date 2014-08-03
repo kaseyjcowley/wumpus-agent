@@ -3,11 +3,15 @@
 #include "kjcPlatoProblem.h"
 #include "Debug.h"
 
+#include <fstream>
+#include <iostream>
+
 namespace kjc {
 	Plato::Plato() {
 		SetName("Plato");
 		this->mModel = new kjc::PlatoModel();
 		this->mHasGold = false;
+		this->firstShot = false;
 	}
 
 	Plato::~Plato() {
@@ -24,6 +28,11 @@ namespace kjc {
 
 		// Start parsing percepts by adding information to the knowledge base
 		this->ParsePercepts(percept, action);
+
+		std::ofstream myfile;
+		myfile.open("PropLogic.txt");
+		myfile << *(this->mModel->mKb);
+		myfile.close();
 
 		switch (action->GetCode()) {
 			case ai::Agent::WumpusAction::GRAB:
@@ -47,16 +56,26 @@ namespace kjc {
 		// Find our current position
 		int x = this->mModel->GetCurrentX();
 		int y = this->mModel->GetCurrentY();
+		bool isStench = false;
+
+		Cell currentCell = this->mModel->GetCell(x,y);
 
 		// Check for screams
 		if (percept->GetAtom("SCREAM").GetValue() != "") {
 			this->mModel->SetWumpusDead();
 			this->mModel->mKb->TellWumpusDead();
+		} else if (firstShot && !this->mModel->WumpusDead()) {
+			action->SetCode(ai::Agent::WumpusAction::QUIT);
+			return;
 		}
 
 		// Check for glitter
 		if (percept->GetAtom("GLITTER").GetValue() != "") {
 			action->SetCode(ai::Agent::WumpusAction::GRAB);
+		}
+
+		if (currentCell.isVisited()) {
+			return;
 		}
 
 		// Check for breezes
@@ -67,10 +86,18 @@ namespace kjc {
 		}
 
 		// Check for stenches
-		if (percept->GetAtom("STENCH").GetValue() != "") {
-			this->mModel->mKb->TellStench(x, y, true);
-		} else {
-			this->mModel->mKb->TellStench(x, y, false);
+		if (!this->mModel->WumpusDead()) {
+			if (percept->GetAtom("STENCH").GetValue() != "") {
+				isStench = true;
+				this->mModel->mKb->TellStench(x, y, true);
+			} else {
+				this->mModel->mKb->TellStench(x, y, false);
+			}
+		}
+
+		if (isStench && ((x == 1 && y == 1) || (x == 2 && y == 1))) {
+			action->SetCode(ai::Agent::WumpusAction::SHOOT);
+			this->firstShot = true;
 		}
 	}
 
@@ -78,8 +105,7 @@ namespace kjc {
 		// Check if our action queue is empty and search for a goal if it is
 		if (this->mActionQueue.empty()) {
 			if (!this->SearchForGoal()) {
-				if (this->mModel->FindWumpus() && this->mModel->mWumpusLocation == NULL) {
-					std::cout << "Found the wumpus at: " << this->mModel->GetWumpusX() << ", " << this->mModel->GetWumpusY() << std::endl;
+				if (this->mModel->FindWumpus() && this->mModel->mWumpusLocation == NULL && !this->mModel->WumpusDead()) {
 					this->mModel->mWumpusLocation = new PlatoState();
 					this->mModel->mWumpusLocation->SetX(this->mModel->GetWumpusX());
 					this->mModel->mWumpusLocation->SetY(this->mModel->GetWumpusY());
@@ -146,7 +172,7 @@ namespace kjc {
 				// std::cout << "Searching for goal" << std::endl;
 				std::list<ai::Search::Node *> *solution = algorithm->GetSolution().GetList();
 	            std::list<ai::Search::Node *>::const_iterator it;
-	            
+
 	            double cost = 0;
 	            int depth   = 0;
 	            for(it = solution->begin(); it != solution->end(); it++) {
@@ -163,7 +189,7 @@ namespace kjc {
 	                depth = (*it)->GetDepth();
 	                // std::cout << std::endl;
 	              }
-	            
+
 	            size_t nodes_generated = algorithm->GetNumberNodesGenerated();
 	            size_t nodes_stored    = algorithm->GetMaxNodesStored();
 	            std::cout << "Results: T " << cost << " " << depth << " "

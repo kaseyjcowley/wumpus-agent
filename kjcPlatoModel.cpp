@@ -129,7 +129,6 @@ namespace kjc {
 		delete this->mWumpusLocation;
 		this->mWumpusLocation = NULL;
 		this->mWumpusDead = true;
-		std::cout << "MODEL IS SETTING WUMPUS AS DEAD: " << (int)this->mWumpusDead << std::endl;
 	}
 
 	int PlatoModel::GetCurrentX() const {
